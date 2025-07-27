@@ -181,18 +181,18 @@ app.post('/sprawdz-voucher', async (req, res) => {
     const [results] = await db.query('SELECT * FROM vouchery WHERE kod = ?', [kod]);
 
     if (results.length === 0) {
-      return res.json({ success: false, message: 'Nieprawidłowy kod vouchera' });
+      return res.json({ success: false, message: 'Ten voucher nie istnieje!' });
     }
 
     const voucher = results[0];
 
     if (voucher.nick) {
-      return res.json({ success: false, message: 'Ten kod został już użyty przez innego gracza.' });
+      return res.json({ success: false, message: 'Ten kod został już użyty!' });
     }
 
     await db.query('UPDATE vouchery SET nick = ? WHERE kod = ?', [nick, kod]);
 
-    return res.json({ success: true, message: 'Kod vouchera poprawny i został przypisany do Twojego nicku!' });
+    return res.json({ success: true, message: 'Kod vouchera poprawny i został przypisany do Ciebie!' });
 
   } catch (err) {
     console.error('Błąd zapytania do bazy danych:', err);
