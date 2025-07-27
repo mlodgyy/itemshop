@@ -12,7 +12,6 @@ const allowedOrigins = [
   'https://vayromc.pl'
 ];
 
-app.use(express.json()); // <-- musi być najpierw
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -65,6 +64,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 
     res.sendStatus(200);
 });
+
+app.use(express.json());
 
 app.post('/create-checkout-session', async (req, res) => {
     const { nick, email } = req.body;
