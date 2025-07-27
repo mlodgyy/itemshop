@@ -169,40 +169,37 @@ app.post('/create-checkout-session-premiumcase', async (req, res) => {
     }
 });
 
-app.post('/sprawdz-voucher', (req, res) => {
-    const { nick, kod } = req.body;
-    console.log('Otrzymano POST /sprawdz-voucher:', req.body);
+app.post('/sprawdz-voucher', async (req, res) => {
+  const { nick, kod } = req.body;
+  console.log('Otrzymano POST /sprawdz-voucher:', req.body);
 
-    if (!kod || !nick) {
-        return res.status(400).json({ success: false, message: 'Brak kodu lub nicku' });
+  if (!kod || !nick) {
+    return res.status(400).json({ success: false, message: 'Brak kodu lub nicku' });
+  }
+
+  try {
+    const [results] = await db.query('SELECT * FROM vouchery WHERE kod = ?', [kod]);
+
+    if (results.length === 0) {
+      return res.json({ success: false, message: 'Nieprawidłowy kod vouchera' });
     }
 
-    db.query('SELECT * FROM vouchery WHERE kod = ?', [kod], (err, results) => {
-        if (err) {
-            console.error('Błąd zapytania do bazy danych:', err);
-            return res.status(500).json({ success: false, message: 'Błąd serwera' });
-        }
+    const voucher = results[0];
 
-        if (results.length === 0) {
-            return res.json({ success: false, message: 'Nieprawidłowy kod vouchera' });
-        }
+    if (voucher.nick) {
+      return res.json({ success: false, message: 'Ten kod został już użyty przez innego gracza.' });
+    }
 
-        const voucher = results[0];
+    await db.query('UPDATE vouchery SET nick = ? WHERE kod = ?', [nick, kod]);
 
-        if (voucher.nick) {
-            return res.json({ success: false, message: 'Ten kod został już użyty przez innego gracza.' });
-        }
+    return res.json({ success: true, message: 'Kod vouchera poprawny i został przypisany do Twojego nicku!' });
 
-        db.query('UPDATE vouchery SET nick = ? WHERE kod = ?', [nick, kod], (updateErr) => {
-            if (updateErr) {
-                console.error('Błąd przy aktualizacji vouchera:', updateErr);
-                return res.status(500).json({ success: false, message: 'Błąd zapisu nicku' });
-            }
-
-            return res.json({ success: true, message: 'Kod vouchera poprawny i został przypisany do Twojego nicku!' });
-        });
-    });
+  } catch (err) {
+    console.error('Błąd zapytania do bazy danych:', err);
+    return res.status(500).json({ success: false, message: 'Błąd serwera' });
+  }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server działa na porcie ${PORT}`));
