@@ -42,7 +42,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 
         console.log(`✅ Płatność zakończona sukcesem dla: ${nick}, ${email}`);
         try { 
-            db.query('INSERT INTO purchases (nick, email, produkt, ilosc) VALUES (?, ?, ?, ?)', [nick, email, 'VIP 7 DNI', 1], (error) => {
+            db.query('INSERT INTO itemshopkupna (nick, email, produkt, ilosc) VALUES (?, ?, ?, ?)', [nick, email, 'VIP 7 DNI', 1], (error) => {
                 if (error) {
                     console.error(`Błąd podczas zapisywania do bazy danych: ${error.message}`);
                 } else {
@@ -87,8 +87,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: 'http://www.vayromc.pl/index.html',
-            cancel_url: 'http://www.vayromc.pl/regulamin/regulamin.html',
+            success_url: 'http://vayromc.pl/index.html',
+            cancel_url: 'http://vayromc.pl/regulamin/regulamin.html',
             metadata: {
                 nick: nick,
             }
