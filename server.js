@@ -25,7 +25,6 @@ app.use(cors({
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const sig = req.headers['stripe-signature'];
-
     let event;
 
     try {
@@ -34,6 +33,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         console.error(`Webhook signature verification failed.`, err.message);
         return res.sendStatus(400);
     }
+
+  console.log('Otrzymany event:', event.type, event);
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
