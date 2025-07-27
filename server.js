@@ -169,5 +169,39 @@ app.post('/create-checkout-session-premiumcase', async (req, res) => {
     }
 });
 
+app.post('/sprawdz-voucher', (req, res) => {
+    const { nick, kod } = req.body;
+
+    if (!kod || !nick) {
+        return res.status(400).json({ success: false, message: 'Brak kodu lub nicku' });
+    }
+
+    db.query('SELECT * FROM vouchery WHERE kod = ?', [kod], (err, results) => {
+        if (err) {
+            console.error('Błąd zapytania do bazy danych:', err);
+            return res.status(500).json({ success: false, message: 'Błąd serwera' });
+        }
+
+        if (results.length === 0) {
+            return res.json({ success: false, message: 'Nieprawidłowy kod vouchera' });
+        }
+
+        const voucher = results[0];
+
+        if (voucher.nick) {
+            return res.json({ success: false, message: 'Ten kod został już użyty przez innego gracza.' });
+        }
+
+        db.query('UPDATE vouchery SET nick = ? WHERE kod = ?', [nick, kod], (updateErr) => {
+            if (updateErr) {
+                console.error('Błąd przy aktualizacji vouchera:', updateErr);
+                return res.status(500).json({ success: false, message: 'Błąd zapisu nicku' });
+            }
+
+            return res.json({ success: true, message: 'Kod vouchera poprawny i został przypisany do Twojego nicku!' });
+        });
+    });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server działa na porcie ${PORT}`));
