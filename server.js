@@ -60,22 +60,31 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     }
 
     if (event.type === 'checkout.session.async_payment_failed') {
-        const session = event.data.object;
-        const nick = session.metadata.nick;
-        const email = session.customer_email;
-        const produkt = session.metadata.produkt;
+    const session = event.data.object;
+    console.log('async_payment_failed session:', session);
 
-        try {
-            await db.query(
-                'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
-                [nick, email, produkt, 1, 0, 0]
-            );
-        } catch (error) {
-            console.error(`❌ Błąd podczas zapisu do bazy danych: ${error.message}`);
-        }
+    const nick = session.metadata?.nick;
+    const email = session.customer_email;
+    const produkt = session.metadata?.produkt;
 
-        console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
+    if (!nick || !produkt) {
+      console.error('Brak nick lub produkt w metadanych async_payment_failed');
+      return res.sendStatus(400);
     }
+
+    try {
+        await db.query(
+            'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+            [nick, email, produkt, 1, 0, 0]
+        );
+        console.log(`Zapytanie zapisane pomimo failed dla: ${nick}, produkt: ${produkt}`);
+    } catch (error) {
+        console.error(`Błąd podczas zapisu do bazy danych: ${error.message}`);
+    }
+
+    console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
+}
+
 
     res.sendStatus(200);
 });
