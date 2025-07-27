@@ -8,41 +8,6 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
 app.use(cors());
-app.use(express.json());
-
-app.post('/create-checkout-session', async (req, res) => {
-    const { nick, email } = req.body;
-
-    try {
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card', 'blik', 'p24', 'klarna'],
-            customer_email: email,
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'pln',
-                        product_data: {
-                            name: `Ranga VIP na 7 dni (Nick: ${nick})`,
-                        },
-                        unit_amount: 1500,
-                    },
-                    quantity: 1,
-                },
-            ],
-            mode: 'payment',
-            success_url: 'http://www.vayromc.pl/index.html',
-            cancel_url: 'http://www.vayromc.pl/regulamin/regulamin.html',
-            metadata: {
-                nick: nick,
-            }
-        });
-
-        res.json({ url: session.url });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Błąd przy tworzeniu sesji Stripe' });
-    }
-});
 
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -85,6 +50,42 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     }
 
     res.sendStatus(200);
+});
+
+app.use(express.json());
+
+app.post('/create-checkout-session', async (req, res) => {
+    const { nick, email } = req.body;
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card', 'blik', 'p24', 'klarna'],
+            customer_email: email,
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'pln',
+                        product_data: {
+                            name: `Ranga VIP na 7 dni (Nick: ${nick})`,
+                        },
+                        unit_amount: 1500,
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: 'http://www.vayromc.pl/index.html',
+            cancel_url: 'http://www.vayromc.pl/regulamin/regulamin.html',
+            metadata: {
+                nick: nick,
+            }
+        });
+
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Błąd przy tworzeniu sesji Stripe' });
+    }
 });
 
 app.listen(3000, () => console.log("Server działa na http://www.vayromc.pl"));
