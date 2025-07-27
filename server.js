@@ -40,7 +40,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
         const nick = session.metadata.nick;
         const email = session.customer_email;
 
-        console.log(`✅ Płatność zakończona sukcesem dla: ${nick}, ${email}`);
+        console.log(`Płatność zakończona sukcesem dla: ${nick}, ${email}`);
         try { 
             db.query('INSERT INTO itemshopkupna (nick, email, produkt, ilosc) VALUES (?, ?, ?, ?)', [nick, email, 'VIP 7 DNI', 1], (error) => {
                 if (error) {
