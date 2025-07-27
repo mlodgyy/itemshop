@@ -264,6 +264,17 @@ app.post('/sprawdz-voucher', async (req, res) => {
   }
 });
 
+app.get('/api/zakupy', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT nick, produkt FROM itemshopkupna WHERE platnosc = 1 ORDER BY id DESC LIMIT 100'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Błąd pobierania zakupów:', err);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server działa na porcie ${PORT}`));
