@@ -87,8 +87,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: 'http://vayromc.pl/index.html',
-            cancel_url: 'http://vayromc.pl/regulamin/regulamin.html',
+            success_url: 'http://vayromc.pl/sukces.html',
+            cancel_url: 'http://vayromc.pl/cancel.html',
             metadata: {
                 nick: nick,
             }
@@ -121,8 +121,8 @@ app.post('/create-checkout-session-svip', async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: 'http://vayromc.pl/index.html',
-            cancel_url: 'http://vayromc.pl/regulamin/regulamin.html',
+            success_url: 'http://vayromc.pl/sukces.html',
+            cancel_url: 'http://vayromc.pl/cancel.html',
             metadata: {
                 nick: nick,
             }
@@ -155,8 +155,8 @@ app.post('/create-checkout-session-premiumcase', async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: 'http://vayromc.pl/index.html',
-            cancel_url: 'http://vayromc.pl/regulamin/regulamin.html',
+            success_url: 'http://vayromc.pl/sukces.html',
+            cancel_url: 'http://vayromc.pl/cancel.html',
             metadata: {
                 nick: nick,
             }
