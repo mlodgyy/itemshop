@@ -88,4 +88,5 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log("Server działa na http://www.vayromc.pl"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server działa na porcie ${PORT}`));
