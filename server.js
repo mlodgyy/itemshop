@@ -7,7 +7,9 @@ require('dotenv').config();
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://www.vayromc.pl'
+}));
 
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
