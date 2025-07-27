@@ -9,4 +9,8 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME
 });
 
+db.query('SELECT 1')
+  .then(() => console.log('Połączenie z bazą działa!'))
+  .catch(err => console.error('Błąd połączenia z bazą:', err));
+
 module.exports = pool.promise();
