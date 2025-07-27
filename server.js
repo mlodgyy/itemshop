@@ -8,7 +8,7 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
 app.use(cors({
-  origin: 'http://www.vayromc.pl'
+  origin: 'https://www.vayromc.pl'
 }));
 
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
