@@ -7,8 +7,19 @@ require('dotenv').config();
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
+const allowedOrigins = [
+  'https://www.vayromc.pl',
+  'https://vayromc.pl'
+];
+
 app.use(cors({
-  origin: 'https://www.vayromc.pl'
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Nieautoryzowany origin: ' + origin));
+    }
+  }
 }));
 
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
