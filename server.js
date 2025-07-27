@@ -101,5 +101,73 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 });
 
+app.post('/create-checkout-session-svip', async (req, res) => {
+    const { nick, email } = req.body;
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card', 'blik', 'klarna'],
+            customer_email: email,
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'pln',
+                        product_data: {
+                            name: `Ranga SVIP na 7 dni (Nick: ${nick})`,
+                        },
+                        unit_amount: 2500,
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: 'http://vayromc.pl/index.html',
+            cancel_url: 'http://vayromc.pl/regulamin/regulamin.html',
+            metadata: {
+                nick: nick,
+            }
+        });
+
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Błąd przy tworzeniu sesji Stripe' });
+    }
+});
+
+app.post('/create-checkout-session-premiumcase', async (req, res) => {
+    const { nick, email } = req.body;
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card', 'blik', 'klarna'],
+            customer_email: email,
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'pln',
+                        product_data: {
+                            name: `PREMIUMCASE x25 sztuk (Nick: ${nick})`,
+                        },
+                        unit_amount: 1500,
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: 'http://vayromc.pl/index.html',
+            cancel_url: 'http://vayromc.pl/regulamin/regulamin.html',
+            metadata: {
+                nick: nick,
+            }
+        });
+
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Błąd przy tworzeniu sesji Stripe' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server działa na porcie ${PORT}`));
