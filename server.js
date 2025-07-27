@@ -22,7 +22,7 @@ app.use(cors({
   }
 }));
 
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const sig = req.headers['stripe-signature'];
 
@@ -39,18 +39,23 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
         const session = event.data.object;
         const nick = session.metadata.nick;
         const email = session.customer_email;
+        const produkt = session.metadata.produkt;
 
-        console.log(`Płatność zakończona sukcesem dla: ${nick}, ${email}`);
-        try { 
-            db.query('INSERT INTO itemshopkupna (nick, email, produkt, ilosc) VALUES (?, ?, ?, ?)', [nick, email, 'VIP 7 DNI', 1], (error) => {
-                if (error) {
-                    console.error(`Błąd podczas zapisywania do bazy danych: ${error.message}`);
-                } else {
-                    console.log(`Zakup zapisany w bazie danych dla: ${nick}`);
-                }
-            });
+        if (!nick || !produkt) {
+          console.error('Brak nick lub produkt w metadanych');
+          return res.sendStatus(400);
+        }
+
+        console.log(`✅ Płatność zakończona sukcesem dla: ${nick}, ${email}, produkt: ${produkt}`);
+
+        try {
+            await db.query(
+                'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+                [nick, email, produkt, 1, 1, 0]
+            );
+            console.log(`✅ Zakup zapisany w bazie danych dla: ${nick}`);
         } catch (error) {
-            console.error(`Błąd podczas przetwarzania płatności: ${error.message}`);
+            console.error(`❌ Błąd podczas zapisu do bazy danych: ${error.message}`);
         }
     }
 
@@ -58,8 +63,18 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
         const session = event.data.object;
         const nick = session.metadata.nick;
         const email = session.customer_email;
+        const produkt = session.metadata.produkt;
 
-        console.log(`❌ Płatność nie powiodła się dla: ${nick}, ${email}`);
+        try {
+            await db.query(
+                'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+                [nick, email, produkt, 1, 0, 0]
+            );
+        } catch (error) {
+            console.error(`❌ Błąd podczas zapisu do bazy danych: ${error.message}`);
+        }
+
+        console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
     }
 
     res.sendStatus(200);
@@ -74,23 +89,22 @@ app.post('/create-checkout-session', async (req, res) => {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'blik', 'klarna'],
             customer_email: email,
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'pln',
-                        product_data: {
-                            name: `Ranga VIP na 7 dni (Nick: ${nick})`,
-                        },
-                        unit_amount: 1500,
+            line_items: [{
+                price_data: {
+                    currency: 'pln',
+                    product_data: {
+                        name: `Ranga VIP na 7 dni (Nick: ${nick})`,
                     },
-                    quantity: 1,
+                    unit_amount: 1500,
                 },
-            ],
+                quantity: 1,
+            }],
             mode: 'payment',
             success_url: 'http://vayromc.pl/sukces.html',
             cancel_url: 'http://vayromc.pl/cancel.html',
             metadata: {
                 nick: nick,
+                produkt: 'VIP 7 DNI'
             }
         });
 
@@ -108,23 +122,22 @@ app.post('/create-checkout-session-svip', async (req, res) => {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'blik', 'klarna'],
             customer_email: email,
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'pln',
-                        product_data: {
-                            name: `Ranga SVIP na 7 dni (Nick: ${nick})`,
-                        },
-                        unit_amount: 2500,
+            line_items: [{
+                price_data: {
+                    currency: 'pln',
+                    product_data: {
+                        name: `Ranga SVIP na 7 dni (Nick: ${nick})`,
                     },
-                    quantity: 1,
+                    unit_amount: 2500,
                 },
-            ],
+                quantity: 1,
+            }],
             mode: 'payment',
             success_url: 'http://vayromc.pl/sukces.html',
             cancel_url: 'http://vayromc.pl/cancel.html',
             metadata: {
                 nick: nick,
+                produkt: 'SVIP 7 DNI'
             }
         });
 
@@ -142,23 +155,22 @@ app.post('/create-checkout-session-premiumcase', async (req, res) => {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'blik', 'klarna'],
             customer_email: email,
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'pln',
-                        product_data: {
-                            name: `PREMIUMCASE x25 sztuk (Nick: ${nick})`,
-                        },
-                        unit_amount: 1500,
+            line_items: [{
+                price_data: {
+                    currency: 'pln',
+                    product_data: {
+                        name: `PREMIUMCASE x25 sztuk (Nick: ${nick})`,
                     },
-                    quantity: 1,
+                    unit_amount: 1500,
                 },
-            ],
+                quantity: 1,
+            }],
             mode: 'payment',
             success_url: 'http://vayromc.pl/sukces.html',
             cancel_url: 'http://vayromc.pl/cancel.html',
             metadata: {
                 nick: nick,
+                produkt: 'PREMIUMCASE x25'
             }
         });
 
