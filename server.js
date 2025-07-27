@@ -86,6 +86,31 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
 }
 
+  if (event.type === 'payment_intent.payment_failed') {
+    const paymentIntent = event.data.object;
+    const metadata = paymentIntent.metadata || {};
+    const nick = metadata.nick;
+    const email = paymentIntent.receipt_email;
+    const produkt = metadata.produkt;
+
+    if (!nick || !produkt) {
+      console.error('Brak nick lub produkt w metadanych payment_failed');
+      return res.sendStatus(400);
+    }
+
+    try {
+        await db.query(
+            'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+            [nick, email, produkt, 1, 0, 0]
+        );
+        console.log(`Zapytanie zapisane pomimo failed (payment_intent.payment_failed) dla: ${nick}, produkt: ${produkt}`);
+    } catch (error) {
+        console.error(`Błąd podczas zapisu do bazy danych: ${error.message}`);
+    }
+
+    console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
+}
+
 
     res.sendStatus(200);
 });
