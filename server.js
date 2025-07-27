@@ -168,6 +168,11 @@ app.post('/create-checkout-session-premiumcase', async (req, res) => {
     }
 });
 
+app.post('/test', (req, res) => {
+  console.log('Test działa:', req.body);
+  res.json({ success: true, message: 'Test OK!' });
+});
+
 app.post('/sprawdz-voucher', (req, res) => {
     const { nick, kod } = req.body;
     console.log('Otrzymano POST /sprawdz-voucher:', req.body);
