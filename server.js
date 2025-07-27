@@ -171,6 +171,7 @@ app.post('/create-checkout-session-premiumcase', async (req, res) => {
 
 app.post('/sprawdz-voucher', (req, res) => {
     const { nick, kod } = req.body;
+    console.log('Otrzymano POST /sprawdz-voucher:', req.body);
 
     if (!kod || !nick) {
         return res.status(400).json({ success: false, message: 'Brak kodu lub nicku' });
