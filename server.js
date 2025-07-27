@@ -23,44 +23,44 @@ app.use(cors({
 }));
 
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const sig = req.headers['stripe-signature'];
-    let event;
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const sig = req.headers['stripe-signature'];
+  let event;
 
-    try {
-        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    } catch (err) {
-        console.error(`Webhook signature verification failed.`, err.message);
-        return res.sendStatus(400);
-    }
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.error(`Webhook signature verification failed.`, err.message);
+    return res.sendStatus(400);
+  }
 
   console.log('Otrzymany event:', event.type, event);
 
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const nick = session.metadata.nick;
-        const email = session.customer_email;
-        const produkt = session.metadata.produkt;
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const nick = session.metadata.nick;
+    const email = session.customer_email;
+    const produkt = session.metadata.produkt;
 
-        if (!nick || !produkt) {
-          console.error('Brak nick lub produkt w metadanych');
-          return res.sendStatus(400);
-        }
-
-        console.log(`✅ Płatność zakończona sukcesem dla: ${nick}, ${email}, produkt: ${produkt}`);
-
-        try {
-            await db.query(
-                'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
-                [nick, email, produkt, 1, 1, 0]
-            );
-            console.log(`✅ Zakup zapisany w bazie danych dla: ${nick}`);
-        } catch (error) {
-            console.error(`❌ Błąd podczas zapisu do bazy danych: ${error.message}`);
-        }
+    if (!nick || !produkt) {
+      console.error('Brak nick lub produkt w metadanych');
+      return res.sendStatus(400);
     }
 
-    if (event.type === 'checkout.session.async_payment_failed') {
+    console.log(`✅ Płatność zakończona sukcesem dla: ${nick}, ${email}, produkt: ${produkt}`);
+
+    try {
+      await db.query(
+        'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+        [nick, email, produkt, 1, 1, 0]
+      );
+      console.log(`✅ Zakup zapisany w bazie danych dla: ${nick}`);
+    } catch (error) {
+      console.error(`❌ Błąd podczas zapisu do bazy danych: ${error.message}`);
+    }
+  }
+
+  if (event.type === 'checkout.session.async_payment_failed') {
     const session = event.data.object;
     console.log('async_payment_failed session:', session);
 
@@ -74,45 +74,62 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     }
 
     try {
-        await db.query(
-            'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
-            [nick, email, produkt, 1, 0, 0]
-        );
-        console.log(`Zapytanie zapisane pomimo failed dla: ${nick}, produkt: ${produkt}`);
+      await db.query(
+        'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+        [nick, email, produkt, 1, 0, 0]
+      );
+      console.log(`Zapytanie zapisane pomimo failed dla: ${nick}, produkt: ${produkt}`);
     } catch (error) {
-        console.error(`Błąd podczas zapisu do bazy danych: ${error.message}`);
+      console.error(`Błąd podczas zapisu do bazy danych: ${error.message}`);
     }
 
     console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
-}
+  }
 
   if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
-    const metadata = paymentIntent.metadata || {};
-    const nick = metadata.nick;
-    const email = paymentIntent.receipt_email;
-    const produkt = metadata.produkt;
+
+    // Pobierz sesję checkout powiązaną z tym paymentIntent
+    let session;
+    try {
+      const sessions = await stripe.checkout.sessions.list({
+        payment_intent: paymentIntent.id,
+        limit: 1,
+      });
+      session = sessions.data[0];
+    } catch (err) {
+      console.error('Błąd podczas pobierania sesji checkout:', err.message);
+      return res.sendStatus(500);
+    }
+
+    if (!session) {
+      console.error('Nie znaleziono sesji checkout powiązanej z paymentIntent');
+      return res.sendStatus(400);
+    }
+
+    const nick = session.metadata.nick;
+    const email = session.customer_email;
+    const produkt = session.metadata.produkt;
 
     if (!nick || !produkt) {
-      console.error('Brak nick lub produkt w metadanych payment_failed');
+      console.error('Brak nick lub produkt w metadanych sesji checkout');
       return res.sendStatus(400);
     }
 
     try {
-        await db.query(
-            'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
-            [nick, email, produkt, 1, 0, 0]
-        );
-        console.log(`Zapytanie zapisane pomimo failed (payment_intent.payment_failed) dla: ${nick}, produkt: ${produkt}`);
+      await db.query(
+        'INSERT INTO itemshopkupna (nick, email, produkt, ilosc, platnosc, processed) VALUES (?, ?, ?, ?, ?, ?)',
+        [nick, email, produkt, 1, 0, 0]
+      );
+      console.log(`Zapytanie zapisane pomimo failed (payment_intent.payment_failed) dla: ${nick}, produkt: ${produkt}`);
     } catch (error) {
-        console.error(`Błąd podczas zapisu do bazy danych: ${error.message}`);
+      console.error(`Błąd podczas zapisu do bazy danych: ${error.message}`);
     }
 
     console.log(`❌ Płatność nie powiodła się dla: ${nick}, produkt: ${produkt}`);
-}
+  }
 
-
-    res.sendStatus(200);
+  res.sendStatus(200);
 });
 
 app.use(express.json());
